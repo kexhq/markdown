@@ -40,51 +40,53 @@ error.
 using Markdown
 
 main(args) do
-  IO.printLine(Markdown.toHtml("# Hello
+  IO.printLine(Markdown.toHtml(`
+    # Hello
 
-Some **bold** text."))
+    Some **bold** text.
+    `))
 end
 ```
 
 ## Usage
 
 A page usually has more going on than one heading. This one has
-frontmatter, a task list, a table, an alert, and a fenced Kex snippet — the
-kind of mix a real changelog or guide page has:
+frontmatter, a task list, a table, and an alert — the kind of mix a real
+changelog or guide page has:
 
-````rb
+```rb
 using Markdown
 
-let page = "---
-title: v0.2.0
----
-# v0.2.0
+let page = `
+  ---
+  title: v0.2.0
+  ---
+  # v0.2.0
 
-> [!NOTE]
-> Table rendering changed shape; templates reading `Table` may need updates.
+  > [!NOTE]
+  > Table rendering changed shape; templates reading ``Table`` may need updates.
 
-- [x] Ship task-list checkboxes
-- [ ] Write the migration guide
+  - [x] Ship task-list checkboxes
+  - [ ] Write the migration guide
 
-| Change | Area |
-| - | - |
-| Faster parsing | core |
-
-```kex
-let shipped = true
-```"
+  | Change | Area |
+  | - | - |
+  | Faster parsing | core |
+  `
 
 main do
   let doc = Markdown.parseDocument(page)
   IO.printLine("Release: ${doc.frontmatter.title}")   # "Release: v0.2.0"
   IO.printLine(Markdown.toHtml(page))                 # the full rendered page
 end
-````
+```
 
-`toHtml` highlights the `kex` fence (`<span class="tok-keyword">`, …);
-`toAuthoringHtml` leaves fenced code as plain text instead, for an editor
-that reads a code block back out as source and would lose highlight spans
-wrapped around its newlines.
+A backtick string is raw and multiline — no `\n` escapes, and `` `` ``
+inside the body is a literal single backtick (a doubled backtick, since a
+single one would close the string). `toHtml` also highlights fenced
+` ```kex ` code the same way; `toAuthoringHtml` leaves it as plain text
+instead, for an editor that reads a code block back out as source and would
+lose highlight spans wrapped around its newlines.
 
 ## Frontmatter
 
