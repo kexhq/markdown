@@ -3,7 +3,7 @@
 package "from-file" do
   version("0.1.0")
   description("Markdown example: read a .md file from disk and render it")
-  kex(">= 0.4.0-beta")
+  kex(">= 0.4.0-beta.2")
   license("MIT")
 
   entrypoint("src/main.kex")
