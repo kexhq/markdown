@@ -3,6 +3,28 @@
 A documented Markdown subset → HTML, for Kex's own docs and hand-written
 prose.
 
+## Installing as a `Tey` package
+
+```sh
+tey add markdown --git https://github.com/kexhq/markdown --tag "~> 0.1"
+tey install
+```
+
+Or pull it in manually in your own package's `package.kex`:
+
+```rb
+tey("markdown", git: "https://github.com/kexhq/markdown", tag: "~> 0.1")
+```
+
+The tag is the release, and `~> 0.1` takes the newest `0.1.x`; Tey resolves
+it against this repository's tags and records the exact commit in
+`tey.lock` — the same way [Rodolfo](https://github.com/kexhq/rodolfo) is
+installed. Then `tey install`, and in the source:
+
+```rb
+using Markdown
+```
+
 Supported, including the GitHub Flavored Markdown extensions people actually
 reach for: YAML-ish frontmatter (with unknown keys kept, not just the ones
 this module reads), ATX headings, paragraphs, fenced code (` ```kex ` runs
@@ -14,11 +36,13 @@ column alignment, no autolinks, no HTML passthrough, no reference links, no
 setext headings — anything else stays a paragraph rather than becoming an
 error.
 
-```kex
+```rb
 using Markdown
 
 main(args) do
-  IO.printLine(Markdown.toHtml("# Hello\n\nSome **bold** text."))
+  IO.printLine(Markdown.toHtml("# Hello
+
+Some **bold** text."))
 end
 ```
 
@@ -28,17 +52,34 @@ A page usually has more going on than one heading. This one has
 frontmatter, a task list, a table, an alert, and a fenced Kex snippet — the
 kind of mix a real changelog or guide page has:
 
-```kex
+````rb
 using Markdown
 
-let page = "---\ntitle: v0.2.0\n---\n# v0.2.0\n\n> [!NOTE]\n> Table rendering changed shape; templates reading `Table` may need updates.\n\n- [x] Ship task-list checkboxes\n- [ ] Write the migration guide\n\n| Change | Area |\n| - | - |\n| Faster parsing | core |\n\n```kex\nlet shipped = true\n```"
+let page = "---
+title: v0.2.0
+---
+# v0.2.0
+
+> [!NOTE]
+> Table rendering changed shape; templates reading `Table` may need updates.
+
+- [x] Ship task-list checkboxes
+- [ ] Write the migration guide
+
+| Change | Area |
+| - | - |
+| Faster parsing | core |
+
+```kex
+let shipped = true
+```"
 
 main do
   let doc = Markdown.parseDocument(page)
   IO.printLine("Release: ${doc.frontmatter.title}")   # "Release: v0.2.0"
   IO.printLine(Markdown.toHtml(page))                 # the full rendered page
 end
-```
+````
 
 `toHtml` highlights the `kex` fence (`<span class="tok-keyword">`, …);
 `toAuthoringHtml` leaves fenced code as plain text instead, for an editor
@@ -53,7 +94,7 @@ included — also lands in `frontmatter.fields`, so a caller with its own
 schema can read a page's `author`, `tags`, or anything else without this
 module needing to know about it:
 
-```kex
+```rb
 let doc = Markdown.parseDocument(text)
 let author = doc.frontmatter.fields.get("author").or("")
 ```
@@ -74,29 +115,18 @@ tey run
 `tey test` at the root runs `spec/`; each example is its own workspace
 member, so `tey build` here builds them too.
 
-## Installing as a `Tey` package
-
-This will be published at `github.com/kexhq/markdown`. Until it's pushed
-there, it lives beside its consumers as a path dependency; in the depending
-package's `package.kex`:
-
-```kex
-tey("markdown", path: "../markdown")
-```
-
-Once tagged on GitHub, switch to a `git:` dependency instead, the same way
-[Rodolfo](https://github.com/kexhq/rodolfo) is installed:
-
-```kex
-tey("markdown", git: "https://github.com/kexhq/markdown", tag: "~> 0.1")
-```
-
-Either way, `tey install`, and in the source:
-
-```kex
-using Markdown
-```
-
 `Markdown.Inline` (code spans, links, images, emphasis) and
 `Markdown.Highlight` (the Kex syntax highlighter fenced code runs through)
 are also usable directly.
+
+## Release it
+
+Bump `version` in `package.kex`, then:
+
+```sh
+git tag v0.2.0 && git push origin v0.2.0
+```
+
+The tag is the release: Tey resolves a requirement like `tag: "~> 0.1"` by
+listing this repository's tags, and the push triggers `release.yml`, which
+runs the test suite and publishes a GitHub release.
