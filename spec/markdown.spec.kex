@@ -1,0 +1,58 @@
+describe "Markdown" do
+  it "renders headings, paragraphs, and inline emphasis to HTML" do
+    let html = Markdown.toHtml("# Title\n\nSome **bold** and *italic* text.")
+    assert(html.contains?("<h1 id=\"title\">Title</h1>"))
+    assert(html.contains?("<p>Some <strong>bold</strong> and <em>italic</em> text.</p>"))
+  end
+
+  it "renders lists, tables, and thematic breaks" do
+    let html = Markdown.toHtml("- one\n- two\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n---")
+    assert(html.contains?("<ul>\n<li>one</li>\n<li>two</li>\n</ul>"))
+    assert(html.contains?("<th>A</th><th>B</th>"))
+    assert(html.contains?("<hr>"))
+  end
+
+  it "renders GFM task-list checkboxes" do
+    let html = Markdown.toHtml("- [ ] todo\n- [x] done\n- [X] also done\n- not a task")
+    assert(html.contains?("<li><input type=\"checkbox\" disabled> todo</li>"))
+    assert(html.contains?("<li><input type=\"checkbox\" disabled checked> done</li>"))
+    assert(html.contains?("<li><input type=\"checkbox\" disabled checked> also done</li>"))
+    assert(html.contains?("<li>not a task</li>"))
+  end
+
+  it "renders GitHub alerts and leaves other blockquotes alone" do
+    let html = Markdown.toHtml("> [!TIP]\n> Type **slash**.\n>\n> - a list")
+    assert(html.contains?("<div class=\"markdown-alert markdown-alert-tip\"><p class=\"markdown-alert-title\">Tip</p><div class=\"markdown-alert-body\">"))
+    assert(html.contains?("<strong>slash</strong>") && html.contains?("<li>a list</li>"))
+    assert(!html.contains?("[!TIP]"))
+    assert(Markdown.toHtml("> [!caution]\n> Lowercase works.").contains?("markdown-alert-caution"))
+    let plain = Markdown.toHtml("> [!FOO]\n> Not an alert.")
+    assert(plain.contains?("<blockquote>") && !plain.contains?("markdown-alert"))
+  end
+
+  it "highlights fenced Kex code and leaves other fences plain" do
+    assert(Markdown.toHtml("```kex\nlet a = 1\n```").contains?("tok-keyword"))
+    assert(!Markdown.toHtml("```\nlet a = 1\n```").contains?("tok-keyword"))
+  end
+
+  it "keeps authoring HTML free of highlight spans" do
+    assert(!Markdown.toAuthoringHtml("```kex\nlet a = 1\n```").contains?("tok-"))
+  end
+
+  it "reads the built-in frontmatter keys and keeps unknown ones in `fields`" do
+    let doc = Markdown.parseDocument("---\ntitle: Hello\ndescription: A page\norder: 3\nauthor: Ada\ntags: kex, docs\n---\nBody.")
+    assert(doc.frontmatter.title == "Hello")
+    assert(doc.frontmatter.description == "A page")
+    assert(doc.frontmatter.order == 3)
+    assert(doc.frontmatter.fields.get("author") == Just("Ada"))
+    assert(doc.frontmatter.fields.get("tags") == Just("kex, docs"))
+    assert(doc.frontmatter.fields.get("title") == Just("Hello"))
+    assert(doc.blocks == [Markdown.Paragraph("Body.")])
+  end
+
+  it "defaults frontmatter when there is no leading fence" do
+    let doc = Markdown.parseDocument("# No frontmatter here")
+    assert(doc.frontmatter.title == "")
+    assert(doc.frontmatter.fields == {})
+  end
+end

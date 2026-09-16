@@ -1,0 +1,38 @@
+# End-to-end coverage from a consumer's point of view: one realistic page
+# exercising frontmatter, an alert, a task list, a table, and a highlighted
+# code fence together, the way a changelog or guide page actually looks —
+# rather than one feature in isolation per test, as markdown.spec.kex does.
+let page -> String do
+  return "---\ntitle: v0.2.0\n---\n# v0.2.0\n\n> [!NOTE]\n> Table rendering changed shape; templates reading `Table` may need updates.\n\n- [x] Ship task-list checkboxes\n- [ ] Write the migration guide\n\n| Change | Area |\n| - | - |\n| Faster parsing | core |\n\n```kex\nlet shipped = true\n```"
+end
+
+describe "a real page" do
+  it "reads the title out of frontmatter without touching the body" do
+    let doc = Markdown.parseDocument(page)
+    assert(doc.frontmatter.title == "v0.2.0")
+  end
+
+  it "renders every block on the page into one HTML document" do
+    let html = Markdown.toHtml(page)
+    assert(html.contains?("<h1 id=\"v0-2-0\">v0.2.0</h1>"))
+    assert(html.contains?("<div class=\"markdown-alert markdown-alert-note\""))
+    assert(html.contains?("Table rendering changed shape; templates reading <code>Table</code> may need updates."))
+    assert(html.contains?("<li><input type=\"checkbox\" disabled checked> Ship task-list checkboxes</li>"))
+    assert(html.contains?("<li><input type=\"checkbox\" disabled> Write the migration guide</li>"))
+    assert(html.contains?("<th>Change</th><th>Area</th>"))
+    assert(html.contains?("<td>Faster parsing</td><td>core</td>"))
+    assert(html.contains?("<span class=\"tok-keyword\">let</span>"))
+  end
+
+  it "leaves the code fence as plain text in authoring mode" do
+    let authoring = Markdown.toAuthoringHtml(page)
+    assert(authoring.contains?("<pre class=\"code\"><code class=\"language-kex\">let shipped = true</code></pre>"))
+    assert(!authoring.contains?("tok-"))
+  end
+
+  it "never loses the frontmatter title even with no recognised body" do
+    let doc = Markdown.parseDocument("---\ntitle: Draft\n---\n")
+    assert(doc.frontmatter.title == "Draft")
+    assert(doc.blocks == [])
+  end
+end

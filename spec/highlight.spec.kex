@@ -1,0 +1,8 @@
+describe "Markdown.Highlight" do
+  it "tokenizes keywords, types, and escapes stray HTML characters" do
+    let html = Markdown.Highlight.highlight("let name = \"x<y\"\nIO.printLine(name)")
+    assert(html.contains?("<span class=\"tok-keyword\">let</span>"))
+    assert(html.contains?("<span class=\"tok-type\">IO</span>"))
+    assert(html.contains?("x&lt;y"))
+  end
+end

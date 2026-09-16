@@ -1,0 +1,12 @@
+# An example run as a workspace member: it depends on the Markdown package
+# at the root of this checkout, not a published release.
+package "embed" do
+  version("0.1.0")
+  description("Markdown example: compile a .md file into the binary with Kex.embed")
+  kex(">= 0.4.0-beta")
+  license("MIT")
+
+  entrypoint("src/main.kex")
+
+  tey("markdown", workspace: true)
+end

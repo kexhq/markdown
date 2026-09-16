@@ -1,0 +1,13 @@
+# Reads guide.md from disk at runtime and prints its rendered HTML, plus
+# the frontmatter fields the page carries — including ones this package
+# doesn't have typed accessors for.
+using Markdown
+
+main do
+  let source = FS.File.read("guide.md").try
+  let doc = Markdown.parseDocument(source)
+  IO.printLine("title: ${doc.frontmatter.title}")
+  IO.printLine("author: ${doc.frontmatter.fields.get("author").or("(none)")}")
+  IO.printLine("")
+  IO.printLine(Markdown.toHtml(source))
+end

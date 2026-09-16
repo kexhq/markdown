@@ -1,0 +1,10 @@
+# Kex.embed reads guide.md at COMPILE time; the string below is a literal
+# in the compiled binary, so this needs no filesystem access at runtime —
+# unlike examples/from-file, which reads its .md file with FS.File.read.
+using Markdown
+
+let guide = Kex.embed("../guide.md")
+
+main do
+  IO.printLine(Markdown.toHtml(guide))
+end

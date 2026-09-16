@@ -1,0 +1,69 @@
+name: Release
+on:
+  push:
+    tags: ["v*.*.*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same toolchain-from-source approach as ci.yml (see its comments):
+      # the newest released Tey/Kex predates what this package and its
+      # sibling packages in kexhq actually run on.
+      - name: Check out Kex
+        uses: actions/checkout@v4
+        with:
+          repository: kexhq/kex
+          ref: main
+          path: kex-src
+
+      - name: Install Kex build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libgmp-dev libpcre2-dev libreadline-dev \
+            libssl-dev erlang-base libboost-context-dev
+
+      - name: Build Kex and Tey
+        working-directory: kex-src
+        run: |
+          cmake -B build -G "Unix Makefiles" -DKEX_BOOST_STATIC=ON
+          cmake --build build --parallel
+          make build-tey
+          make tey-run
+
+      - name: Put a `tey` wrapper on PATH
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          cat > "$HOME/.local/bin/tey" <<WRAP
+          #!/bin/sh
+          export TEY_ERL="$(command -v erl)"
+          exec "$GITHUB_WORKSPACE/kex-src/tey-run" "\$@"
+          WRAP
+          chmod +x "$HOME/.local/bin/tey"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # The tag is the release Tey resolves (`tag: "~> 0.1"` in a consumer's
+      # package.kex) — package.kex's version() is what `tey list`/error
+      # messages show a human, and the two drifting apart is confusing
+      # enough to fail the release over.
+      - name: Check tag matches package.kex version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          manifest_version="$(grep -oP 'version\("\K[^"]+' package.kex)"
+          if [ "$tag_version" != "$manifest_version" ]; then
+            echo "::error::tag v$tag_version does not match package.kex version $manifest_version"
+            exit 1
+          fi
+
+      - run: tey install
+      - run: tey build
+      - run: tey test
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true

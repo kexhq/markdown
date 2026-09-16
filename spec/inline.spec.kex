@@ -1,0 +1,17 @@
+describe "Markdown.Inline" do
+  it "finds substrings by character position, including after Unicode" do
+    assert(Markdown.Inline.find("ééé<x>", "<x>", 0) == Just(3))
+    assert(Markdown.Inline.find("abc", "d", 0) == None)
+  end
+
+  it "renders code spans, links, images, and emphasis" do
+    assert(Markdown.Inline.toHtml("`a < b`") == "<code>a &lt; b</code>")
+    assert(Markdown.Inline.toHtml("[Kex](https://kex.run)") == "<a href=\"https://kex.run\">Kex</a>")
+    assert(Markdown.Inline.toHtml("![alt](/img.png)") == "<img src=\"/img.png\" alt=\"alt\">")
+    assert(Markdown.Inline.toHtml("**bold** ~~gone~~ *em*") == "<strong>bold</strong> <s>gone</s> <em>em</em>")
+  end
+
+  it "sanitizes unsafe link and image URLs to #" do
+    assert(Markdown.Inline.toHtml("[x](javascript:evil)") == "<a href=\"#\">x</a>")
+  end
+end
