@@ -1,4 +1,4 @@
-bundle "markdown" do
+package "markdown" do
   version("0.1.1")
   description("Markdown parser library for Kex")
   kex(">= 0.4.0-beta")
