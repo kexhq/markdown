@@ -44,7 +44,7 @@ main(args) do
     # Hello
 
     Some **bold** text.
-    `))
+  `))
 end
 ```
 
@@ -69,10 +69,10 @@ let page = `
   - [x] Ship task-list checkboxes
   - [ ] Write the migration guide
 
-  | Change | Area |
-  | - | - |
+  | Change         | Area |
+  | -------------- | ---- |
   | Faster parsing | core |
-  `
+`
 
 main do
   let doc = Markdown.parseDocument(page)

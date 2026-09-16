@@ -1,5 +1,5 @@
 bundle "markdown" do
-  version("0.1.0")
+  version("0.1.1")
   description("Markdown parser library for Kex")
   kex(">= 0.4.0-beta")
   license("MIT")
