@@ -21,11 +21,18 @@ jobs:
           ref: main
           path: kex-src
 
+      # Ubuntu 24.04's erlang-base is OTP 25, and Kex needs OTP 27+ (its
+      # CMakeLists refuses older), so Erlang comes from setup-beam, as in
+      # kexhq/kex's own CI.
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "27"
+
       - name: Install Kex build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake libgmp-dev libpcre2-dev libreadline-dev \
-            libssl-dev erlang-base libboost-context-dev
+            libssl-dev libboost-context-dev
 
       - name: Build Kex and Tey
         working-directory: kex-src
