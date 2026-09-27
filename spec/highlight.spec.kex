@@ -5,4 +5,14 @@ describe "Markdown.Highlight" do
     assert(html.contains?("<span class=\"tok-type\">IO</span>"))
     assert(html.contains?("x&lt;y"))
   end
+
+  it "colors every keyword the compiler reserves" do
+    let html = Markdown.Highlight.highlight("serving slot compiled trying capability final")
+    assert(html.contains?("<span class=\"tok-keyword\">serving</span>"))
+    assert(html.contains?("<span class=\"tok-keyword\">slot</span>"))
+    assert(html.contains?("<span class=\"tok-keyword\">compiled</span>"))
+    assert(html.contains?("<span class=\"tok-keyword\">trying</span>"))
+    assert(html.contains?("<span class=\"tok-keyword\">capability</span>"))
+    assert(html.contains?("<span class=\"tok-keyword\">final</span>"))
+  end
 end
