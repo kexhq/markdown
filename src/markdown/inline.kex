@@ -15,26 +15,32 @@ let loopText(cursor: Input, output: String) -> String do
   end
   if text.startsWith?("`")
     let (fence, afterFence) = cursor.takeWhile { |c| c == '`' }
-    let endAt = find(afterFence.remaining, fence, 0)
-    if endAt.set?
-      let literal = afterFence.remaining.take(endAt.try)
-      let normalized = literal.startsWith?(" ") && literal.endsWith?(" ") && literal.trim != "" then literal.drop(1).take(literal.count - 2) else literal
-      return loopText(afterFence.advanceBy(endAt.try + fence.count), output + "<code>${esc(normalized)}</code>")
+    match find(afterFence.remaining, fence, 0) do
+      Just(endAt) => do
+        let literal = afterFence.remaining.take(endAt)
+        let normalized = literal.startsWith?(" ") && literal.endsWith?(" ") && literal.trim != "" then literal.drop(1).take(literal.count - 2) else literal
+        return loopText(afterFence.advanceBy(endAt + fence.count), output + "<code>${esc(normalized)}</code>")
+      end
+      None => ()
     end
   end
   let image? = text.startsWith?("![")
   if image? || text.startsWith?("[")
     let opening = image? then 2 else 1
-    let labelEnd = find(text, "](", opening)
-    if labelEnd.set?
-      let urlStart = labelEnd.try + 2
-      let urlEnd = find(text, ")", urlStart)
-      if urlEnd.set?
-        let label = text.drop(opening).take(labelEnd.try - opening)
-        let url = safeURL(text.drop(urlStart).take(urlEnd.try - urlStart))
-        let html = image? then "<img src=\"${esc(url)}\" alt=\"${esc(label)}\">" else "<a href=\"${esc(url)}\">${toHtml(label)}</a>"
-        return loopText(cursor.advanceBy(urlEnd.try + 1), output + html)
+    match find(text, "](", opening) do
+      Just(labelEnd) => do
+        let urlStart = labelEnd + 2
+        match find(text, ")", urlStart) do
+          Just(urlEnd) => do
+            let label = text.drop(opening).take(labelEnd - opening)
+            let url = safeURL(text.drop(urlStart).take(urlEnd - urlStart))
+            let html = image? then "<img src=\"${esc(url)}\" alt=\"${esc(label)}\">" else "<a href=\"${esc(url)}\">${toHtml(label)}</a>"
+            return loopText(cursor.advanceBy(urlEnd + 1), output + html)
+          end
+          None => ()
+        end
       end
+      None => ()
     end
   end
   let marker = if text.startsWith?("**")
@@ -49,11 +55,13 @@ let loopText(cursor: Input, output: String) -> String do
     ""
   end
   if marker != ""
-    let closing = find(text, marker, marker.count)
-    if closing.set?
-      let tag = marker == "**" then "strong" else (marker == "~~" then "s" else "em")
-      let inner = text.drop(marker.count).take(closing.try - marker.count)
-      return loopText(cursor.advanceBy(closing.try + marker.count), output + "<${tag}>${toHtml(inner)}</${tag}>")
+    match find(text, marker, marker.count) do
+      Just(closing) => do
+        let tag = marker == "**" then "strong" else (marker == "~~" then "s" else "em")
+        let inner = text.drop(marker.count).take(closing - marker.count)
+        return loopText(cursor.advanceBy(closing + marker.count), output + "<${tag}>${toHtml(inner)}</${tag}>")
+      end
+      None => ()
     end
   end
   return loopText(cursor.advance, output + esc(text.take(1)))
