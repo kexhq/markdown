@@ -50,7 +50,7 @@ jobs:
         working-directory: kex-src
         run: |
           cmake -B build -G "Unix Makefiles" -DKEX_BOOST_STATIC=ON
-          cmake --build build --parallel
+          cmake --build build --parallel 2
           make build-tey
           make tey-run
 
