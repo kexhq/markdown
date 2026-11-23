@@ -88,6 +88,25 @@ single one would close the string). `toHtml` also highlights fenced
 instead, for an editor that reads a code block back out as source and would
 lose highlight spans wrapped around its newlines.
 
+A ` ```kex-output ` fence holds what the compiler prints about a program,
+and `toHtml` colours it the way the compiler colours it in a terminal:
+
+````markdown
+```kex-output
+example.kex:2:3: [KEXEM-0001]: Error, module cannot export itself
+  |
+2 |   export Shapes
+  |   ^^^^^^^^^^^^^
+```
+````
+
+Its source lines (`2 |   export Shapes`) are highlighted like ` ```kex `
+code, with the same `tok-*` classes. The rest is marked for your stylesheet:
+`diag-loc` (the `file.kex:2:3:`), `diag-error`, `diag-warning` and
+`diag-note` (the label), `diag-primary` (the `^^^` underline) and
+`diag-secondary` (a `---` one). The message, the gutter and the words beside
+an underline stay plain text.
+
 ## Frontmatter
 
 `parseDocument` splits a leading `---` fence off the body. `title`,

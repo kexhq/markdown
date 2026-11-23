@@ -1,0 +1,78 @@
+# What the Kex compiler prints about a program, coloured the way the compiler
+# colours it in a terminal. A ```kex-output fence holds it:
+#
+#   example.kex:2:3: [KEXEM-0001]: Error, module cannot export itself
+#     |
+#   2 |   export Shapes
+#     |   ^^^^^^^^^^^^^
+#
+# A source line (`2 |   export Shapes`) goes through Markdown.Highlight, as
+# a ```kex fence does, and carries the same tok-* classes. The rest is marked
+# with diag-* classes for a stylesheet to colour:
+#
+#   diag-loc              the `file.kex:LINE:COLUMN:` a diagnostic starts with
+#   diag-error            `[KEXET-0001]: Error`
+#   diag-warning          `[KEXWT-0001]: Warning`
+#   diag-note             `note:`, a second place a diagnostic points at
+#   diag-primary          the `^^^` under what the diagnostic is about
+#   diag-secondary        the `---` under what it points to besides
+#
+# The message, the gutter and the words beside an underline stay plain text.
+
+module Markdown.Output do
+  using Regex
+
+  foul highlight(output: String) -> String do
+    return output.split("\n").map { |line| outputLine(line) }.join("\n")
+  end
+
+  foul outputLine(line: String) -> String do
+    let head = header(line)
+    return head if !head.empty?
+    match line.scan(re`^( *\d+ \| ?)(.*)$`).first do
+      Just(m) => return "${esc(m.get(1, ""))}${Markdown.Highlight.highlight(m.get(2, ""))}"
+      None => ()
+    end
+    match line.scan(re`^( *\|)(.*)$`).first do
+      Just(m) => return "${esc(m.get(1, ""))}${underline(m.get(2, ""))}"
+      None => ()
+    end
+    return esc(line)
+  end
+
+  # A diagnostic's first line, marked, or empty when +line+ is not one:
+  # `file.kex:2:3: [KEXEM-0001]: Error, message`, or the
+  # `file.kex:2:3: note: message` that points at a second place.
+  foul header(line: String) -> String do
+    match line.scan(re`^(\S+:\d+:\d+:) (\[KEX[EW][A-Z]-\d+\]: (Error|Warning))(.*)$`).first do
+      Just(m) => do
+        let kind = m.get(3, "") == "Error" then "error" else "warning"
+        return "${span("diag-loc", esc(m.get(1, "")))} ${span("diag-${kind}", esc(m.get(2, "")))}${esc(m.get(4, ""))}"
+      end
+      None => ()
+    end
+    match line.scan(re`^(\S+:\d+:\d+:) (note:)(.*)$`).first do
+      Just(m) => return "${span("diag-loc", esc(m.get(1, "")))} ${span("diag-note", esc(m.get(2, "")))}${esc(m.get(3, ""))}"
+      None => ""
+    end
+  end
+
+  # What follows a gutter: the underlines, and the words that say why. A run
+  # of `-` is an underline only standing on its own, not inside a word.
+  foul underline(text: String) -> String do
+    return esc(text)
+      .replace(re`\^+`) { |m| span("diag-primary", m.get(0, "")) }
+      .replace(re`(?<![\w-])-+(?![\w-])`) { |m| span("diag-secondary", m.get(0, "")) }
+  end
+
+  # +text+ already escaped.
+  foul span(cls: String, text: String) -> String do
+    return "<span class=\"${cls}\">${text}</span>"
+  end
+
+  # Local copy of Markdown.esc, as Markdown.Highlight keeps one: Markdown
+  # calls this module for code blocks.
+  foul esc(s: String) -> String do
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
+  end
+end
