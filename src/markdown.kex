@@ -9,7 +9,7 @@
 # The subset is what the kex.run guide pages actually use, plus the GitHub
 # Flavored Markdown extensions people actually reach for: YAML-ish
 # frontmatter, ATX headings, paragraphs, fenced code (```kex runs through the
-# highlighter), blockquotes, GitHub alerts (`> [!NOTE]` and friends), ordered
+# highlighter, ```kex-output is coloured as compiler output), blockquotes, GitHub alerts (`> [!NOTE]` and friends), ordered
 # and unordered lists with nesting and task-list checkboxes, GFM tables,
 # thematic breaks, and inline code / bold / italics / strikethrough / links /
 # images. It is deliberately not CommonMark — there is no HTML passthrough,
@@ -431,11 +431,15 @@ module Markdown do
   end
 
   # Kex code goes through the same highlighter the reference pages use, so a
-  # snippet in the guide looks like a signature in the reference. Everything
-  # else is escaped and left plain.
+  # snippet in the guide looks like a signature in the reference, and what
+  # the compiler prints about it is coloured as a terminal colours it.
+  # Everything else is escaped and left plain.
   foul renderCode(language: String, body: String, highlight?: Bool) -> String do
     if language == "kex" && highlight?
       return "<pre class=\"code\"><code class=\"language-kex\">${Markdown.Highlight.highlight(body)}</code></pre>"
+    end
+    if language == "kex-output" && highlight?
+      return "<pre class=\"code\"><code class=\"language-kex-output\">${Markdown.Output.highlight(body)}</code></pre>"
     end
     if language == ""
       return "<pre class=\"code\"><code>${esc(body)}</code></pre>"

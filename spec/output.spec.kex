@@ -1,0 +1,42 @@
+describe "Markdown.Output" do
+  it "marks a diagnostic's location and label, and leaves its message plain" do
+    let html = Markdown.Output.highlight("example.kex:2:3: [KEXEM-0001]: Error, module cannot export itself")
+    assert(html == "<span class=\"diag-loc\">example.kex:2:3:</span> <span class=\"diag-error\">[KEXEM-0001]: Error</span>, module cannot export itself")
+  end
+
+  it "tells a warning and a note from an error" do
+    let warning = Markdown.Output.highlight("example.kex:1:5: [KEXWS-0002]: Warning, unused variable n")
+    assert(warning.contains?("<span class=\"diag-warning\">[KEXWS-0002]: Warning</span>, unused variable n"))
+    let note = Markdown.Output.highlight("example.kex:2:3: note: the other definition is here")
+    assert(note.contains?("<span class=\"diag-note\">note:</span> the other definition is here"))
+  end
+
+  it "highlights a source line as Kex, after a plain gutter" do
+    let html = Markdown.Output.highlight("2 |   export Shapes")
+    assert(html == "2 |   <span class=\"tok-keyword\">export</span> <span class=\"tok-type\">Shapes</span>")
+  end
+
+  it "marks underlines and leaves the words beside them plain" do
+    let html = Markdown.Output.highlight("  |              -------   ^^^^^ this has type String")
+    assert(html.contains?("<span class=\"diag-secondary\">-------</span>"))
+    assert(html.contains?("<span class=\"diag-primary\">^^^^^</span> this has type String"))
+    let word = Markdown.Output.highlight("  |   ^ a return-type")
+    assert(word.contains?("a return-type"))
+  end
+
+  it "escapes what the compiler quotes" do
+    let html = Markdown.Output.highlight("example.kex:1:1: [KEXET-0001]: Error, expected List<Integer>, got \"a\" & b")
+    assert(html.contains?("expected List&lt;Integer&gt;, got &quot;a&quot; &amp; b"))
+  end
+
+  it "colours a kex-output fence, and leaves it plain for authoring" do
+    let fence = "`".repeat(3)
+    let page = "${fence}kex-output\nexample.kex:2:3: [KEXEM-0001]: Error, module cannot export itself\n  |\n2 |   export Shapes\n  |   ^^^^^^^^^^^^^\n${fence}"
+    let html = Markdown.toHtml(page)
+    assert(html.contains?("<pre class=\"code\"><code class=\"language-kex-output\"><span class=\"diag-loc\">"))
+    assert(html.contains?("<span class=\"tok-keyword\">export</span>"))
+    assert(html.contains?("<span class=\"diag-primary\">^^^^^^^^^^^^^</span></code></pre>"))
+    let authoring = Markdown.toAuthoringHtml(page)
+    assert(authoring.contains?("<code class=\"language-kex-output\">example.kex:2:3: [KEXEM-0001]: Error"))
+  end
+end
